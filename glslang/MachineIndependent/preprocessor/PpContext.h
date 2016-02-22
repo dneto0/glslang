@@ -437,19 +437,19 @@ protected:
         // Copies str, which must be non-empty.
         TokenizableString(const TSourceLoc& startLoc,
                           const std::string& prologue,
-                          const TShader::Includer::IncludeResult& includedFile,
+                          TShader::Includer::IncludeResult* includedFile,
                           const std::string epilogue,
                           TPpContext* pp)
             : tInput(pp),
               prologue_(prologue),
               includedFile_(includedFile),
               epilogue_(epilogue),
-              strings({prologue_.data(), includedFile_.file_data, epilogue_.data()}),
-              lengths({prologue_.size(), includedFile_.file_length, epilogue_.size()}),
+              strings({prologue_.data(), includedFile_->file_data, epilogue_.data()}),
+              lengths({prologue_.size(), includedFile_->file_length, epilogue_.size()}),
               names({
-                      includedFile_.file_name.c_str(),
-                      includedFile_.file_name.c_str(),
-                      includedFile_.file_name.c_str()
+                      includedFile_->file_name.c_str(),
+                      includedFile_->file_name.c_str(),
+                      includedFile_->file_name.c_str()
               }),
               scanner(3, strings, lengths, names, 0, 0, true),
               prevScanner(nullptr),
@@ -468,7 +468,7 @@ protected:
         {
             prevScanner = pp->parseContext.getScanner();
             pp->parseContext.setScanner(&scanner);
-            pp->push_include(&includedFile_);
+            pp->push_include(includedFile_);
         }
 
         void notifyDeleted() override
@@ -484,7 +484,7 @@ protected:
         // Stores the epilogue for this string.
         const std::string epilogue_;
 
-        const TShader::Includer::IncludeResult includedFile_;
+        TShader::Includer::IncludeResult* includedFile_;
 
         // Will point to str_[0] and be passed to scanner constructor.
         const char* strings[3];
@@ -506,13 +506,13 @@ protected:
     void missingEndifCheck();
     int lFloatConst(int len, int ch, TPpToken* ppToken);
 
-    void push_include(const TShader::Includer::IncludeResult* result) {
+    void push_include(TShader::Includer::IncludeResult* result) {
       currentSourceFile = result->file_name;
       includeStack.push(result);
     }
 
     void pop_include() {
-      const TShader::Includer::IncludeResult* include = includeStack.top();
+      TShader::Includer::IncludeResult* include = includeStack.top();
       includeStack.pop();
       includer.releaseInclude(include);
       if (includeStack.empty()) {
@@ -532,7 +532,7 @@ protected:
 
     TAtomMap atomMap;
     TStringMap stringMap;
-    std::stack<const TShader::Includer::IncludeResult*> includeStack;
+    std::stack<TShader::Includer::IncludeResult*> includeStack;
     std::string currentSourceFile;
     std::string rootFileName;
     int nextAtom;

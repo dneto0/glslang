@@ -327,7 +327,7 @@ public:
           // storage.
           const char* file_data;
           const size_t file_length;
-          // Includer's context.
+          // Include resolver's context.
           void* user_data;
         };
 
@@ -339,23 +339,26 @@ public:
         // of the returned IncludeResult value, and those contents must
         // remain valid until the releaseInclude method is called on that
         // IncludeResult object.
-        virtual IncludeResult include(const char* requested_source,
+        virtual IncludeResult* include(const char* requested_source,
                                       IncludeType type,
                                       const char* requesting_source) = 0;
         // Signals that the parser will no longer use the contents of the
         // specified IncludeResult.
-        virtual void releaseInclude(const IncludeResult* result) = 0;
+        virtual void releaseInclude(IncludeResult* result) = 0;
     };
 
     // Returns an error message for any #include directive.
     class ForbidInclude : public Includer {
-    public:
-        IncludeResult include(const char* /*file_name*/, IncludeType, const char* /*including_file*/) override
-        {
-            static const char unexpected_include[] = "#error unexpected include directive";
-            return IncludeResult({"", unexpected_include, sizeof(unexpected_include) - 1});
-        }
-        virtual void releaseInclude(const IncludeResult* result) override {}
+     public:
+      IncludeResult* include(const char*, IncludeType, const char*) override {
+        static const char unexpected_include[] =
+            "#error unexpected include directive";
+        return new IncludeResult(
+            {"", unexpected_include, sizeof(unexpected_include) - 1, nullptr});
+      }
+      virtual void releaseInclude(IncludeResult* result) override {
+        delete result;
+      }
     };
 
     bool parse(const TBuiltInResource* res, int defaultVersion, EProfile defaultProfile, bool forceDefaultVersionAndProfile,
