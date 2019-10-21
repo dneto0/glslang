@@ -417,6 +417,21 @@ INSTANTIATE_TEST_CASE_P(
     FileNameAsCustomTestSuffix
 );
 
+// Cases with deliberately unreachable code.
+INSTANTIATE_TEST_CASE_P(
+    GlslWithDeadCode, CompileVulkanToSpirvTest,
+    ::testing::ValuesIn(std::vector<std::string>({
+        "spv.dead-after-continue.vert",
+        "spv.dead-after-discard.frag",
+        "spv.dead-after-return.vert",
+        "spv.dead-after-loop-break.vert",
+        "spv.dead-after-switch-break.vert",
+        "spv.dead-complex-continue-after-return.vert",
+        "spv.dead-complex-merge-after-return.vert",
+    })),
+    FileNameAsCustomTestSuffix
+);
+
 // clang-format off
 INSTANTIATE_TEST_CASE_P(
     Glsl, CompileVulkanToDebugSpirvTest,
