@@ -7,7 +7,7 @@ void main() {
   int i = 0;
   o = 1;
   // This has non-trivial continue target.
-  for (i=0; i < 5; ++i, o=1) {
+  for (i=0; i < 5; ++i, o=99) {
     o = 2;
     return;
     o = 3;
