@@ -268,10 +268,20 @@ protected:
     bool unreachable;
 };
 
+// The different reasons for reaching a block in the inReachableOrder traversal.
+typedef enum ReachReason {
+  // Reachable from the entry block via transfers of control, i.e. branches.
+  ReachViaControlFlow = 0,
+  // A continue target that is not reachable via control flow.
+  ReachDeadContinue,
+  // A merge block that is not reachable via control flow.
+  ReachDeadMerge
+};
+
 // Traverses the control-flow graph rooted at root in an order suited for
 // readable code generation.  Invokes callback at every node in the traversal
 // order.
-void inReadableOrder(Block* root, std::function<void(Block*)> callback);
+void inReadableOrder(Block* root, std::function<void(Block*, ReachReason)> callback);
 
 //
 // SPIR-V IR Function.
@@ -321,7 +331,7 @@ public:
             parameterInstructions[p]->dump(out);
 
         // Blocks
-        inReadableOrder(blocks[0], [&out](const Block* b) { b->dump(out); });
+        inReadableOrder(blocks[0], [&out](const Block* b, ReachReason) { b->dump(out); });
         Instruction end(0, 0, OpFunctionEnd);
         end.dump(out);
     }

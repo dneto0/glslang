@@ -336,7 +336,7 @@ void Builder::postProcess()
     for (auto fi = module.getFunctions().cbegin(); fi != module.getFunctions().cend(); fi++) {
         Function* f = *fi;
         Block* entry = f->getEntryBlock();
-        inReadableOrder(entry, [&reachableBlocks](const Block* b) { reachableBlocks.insert(b); });
+        inReadableOrder(entry, [&reachableBlocks](const Block* b, ReachReason) { reachableBlocks.insert(b); });
         for (auto bi = f->getBlocks().cbegin(); bi != f->getBlocks().cend(); bi++) {
             Block* b = *bi;
             if (reachableBlocks.count(b) == 0) {
