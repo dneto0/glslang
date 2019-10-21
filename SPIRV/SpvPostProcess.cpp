@@ -328,7 +328,11 @@ void Builder::postProcessReachable(const Instruction&)
 // comment in header
 void Builder::postProcess()
 {
+    // reachableBlocks is the set of blockss reached via control flow, or which are
+    // unreachable continue targert or unreachable merge.
     std::unordered_set<const Block*> reachableBlocks;
+    std::unordered_map<Block*, Block*> headerForUnreachableContinue;
+    std::unordered_map<Block*, Block*> headerForUnreachableMerge;
     std::unordered_set<Id> unreachableDefinitions;
     // Collect IDs defined in unreachable blocks. For each function, label the
     // reachable blocks first. Then for each unreachable block, collect the
@@ -336,16 +340,38 @@ void Builder::postProcess()
     for (auto fi = module.getFunctions().cbegin(); fi != module.getFunctions().cend(); fi++) {
         Function* f = *fi;
         Block* entry = f->getEntryBlock();
-        inReadableOrder(entry, [&reachableBlocks](Block* b, ReachReason, Block* header) {
-            reachableBlocks.insert(b); 
-        });
+        inReadableOrder(entry,
+	    [&reachableBlocks, &headerForUnreachableMerge, &headerForUnreachableContinue]
+	    (Block* b, ReachReason why, Block* header) {
+               reachableBlocks.insert(b);
+	       if (why == ReachDeadContinue) headerForUnreachableContinue[b] = header;
+	       if (why == ReachDeadMerge) headerForUnreachableMerge[b] = header;
+            });
         for (auto bi = f->getBlocks().cbegin(); bi != f->getBlocks().cend(); bi++) {
             Block* b = *bi;
-            if (reachableBlocks.count(b) == 0) {
-                for (auto ii = b->getInstructions().cbegin(); ii != b->getInstructions().cend(); ii++)
+	    if (headerForUnreachableMerge.count(b) != 0 || headerForUnreachableContinue.count(b) != 0) {
+                auto ii = b->getInstructions().cbegin(); 
+		++ii; // Keep potential decorations on the label.
+                for (; ii != b->getInstructions().cend(); ++ii)
+                    unreachableDefinitions.insert(ii->get()->getResultId());
+	    } else if (reachableBlocks.count(b) == 0) {
+	        // The normal case for unreachable code.  All definitions are considered dead.
+                for (auto ii = b->getInstructions().cbegin(); ii != b->getInstructions().cend(); ++ii)
                     unreachableDefinitions.insert(ii->get()->getResultId());
             }
         }
+    }
+
+    // Modify unreachable merge blocks and unreachable continue targets.
+    // Delete their contents.
+    for (auto merge_and_header : headerForUnreachableMerge) {
+        Block* merge = merge_and_header.first;
+	merge->forceDeadMerge();
+    }
+    for (auto continue_and_header : headerForUnreachableContinue) {
+        Block* continue_target = continue_and_header.first;
+        Block* header = continue_and_header.second;
+	continue_target->forceDeadContinue(header);
     }
 
     // Remove unneeded decorations, for unreachable instructions

@@ -226,6 +226,36 @@ public:
         return nullptr;
     }
 
+    // Change this block into a canonical dead merge block.  Delete instructions
+    // as necessary.  A canonical dead merge block has only an OpLabel and an
+    // OpUnreachable.
+    void forceDeadMerge() {
+       assert(localVariables.empty());
+       // Delete all instructions except for the label.
+       assert(instructions.size() > 0);
+       instructions.resize(1);
+       successors.clear();
+       Instruction* unreachable = new Instruction(OpUnreachable);
+       addInstruction(std::unique_ptr<Instruction>(unreachable));
+    }
+    // Change this block into a canonical dead continue target branching to the
+    // given header ID.  Delete instructions as necessary.  A canonical dead continue
+    // target has only an OpLabel and an unconditional branch back to the corresponding
+    // header.
+    void forceDeadContinue(Block* header) {
+       assert(localVariables.empty());
+       // Delete all instructions except for the label.
+       assert(instructions.size() > 0);
+       instructions.resize(1);
+       successors.clear();
+       // Add OpBranch back to the header.
+       assert(header != nullptr);
+       Instruction* branch = new Instruction(OpBranch);
+       branch->addIdOperand(header->getId());
+       addInstruction(std::move(std::unique_ptr<Instruction>(branch)));
+       successors.push_back(header);
+    }
+
     bool isTerminated() const
     {
         switch (instructions.back()->getOpCode()) {
@@ -235,6 +265,7 @@ public:
         case OpKill:
         case OpReturn:
         case OpReturnValue:
+        case OpUnreachable:
             return true;
         default:
             return false;
