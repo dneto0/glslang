@@ -61,13 +61,14 @@ namespace {
 // Use by calling visit() on the root block.
 class ReadableOrderTraverser {
 public:
-    explicit ReadableOrderTraverser(std::function<void(Block*, spv::ReachReason)> callback)
-      : callback_(callback), fullyEmitDeadContinuesAndMerges(true) {}
+    explicit ReadableOrderTraverser(std::function<void(Block*, spv::ReachReason, Block*)> callback)
+      : callback_(callback), fullyEmitDeadContinuesAndMerges(false) {}
     // Visits the block if it hasn't been visited already and isn't currently
-    // being delayed.  Invokes callback(block, why), then descends into its
+    // being delayed.  Invokes callback(block, why, header), then descends into its
     // successors.  Delays merge-block and continue-block processing until all
-    // the branches have been completed.
-    void visit(Block* block, spv::ReachReason why)
+    // the branches have been completed.  If |block| is a merge block or continue target,
+    // then |header| is the corresponding header block.
+    void visit(Block* block, spv::ReachReason why, Block* header)
     {
         assert(block);
         if (why == spv::ReachViaControlFlow) {
@@ -75,7 +76,7 @@ public:
         }
         if (visited_.count(block) || delayed_.count(block))
             return;
-        callback_(block, why);
+        callback_(block, why, header);
         visited_.insert(block);
         Block* mergeBlock = nullptr;
         Block* continueBlock = nullptr;
@@ -94,33 +95,33 @@ public:
 	if (why == spv::ReachViaControlFlow || fullyEmitDeadContinuesAndMerges) {
             const auto& successors = block->getSuccessors();
             for (auto it = successors.cbegin(); it != successors.cend(); ++it)
-                visit(*it, why);
+                visit(*it, why, nullptr);
 	}
         if (continueBlock) {
             const spv::ReachReason continueWhy = reachableViaControlFlow_.count(continueBlock) == 0
                 ? spv::ReachDeadContinue : spv::ReachViaControlFlow;
             delayed_.erase(continueBlock);
-            visit(continueBlock, continueWhy);
+            visit(continueBlock, continueWhy, block);
         }
         if (mergeBlock) {
             const spv::ReachReason mergeWhy = reachableViaControlFlow_.count(mergeBlock) == 0
                ? spv::ReachDeadMerge : spv::ReachViaControlFlow;
             delayed_.erase(mergeBlock);
-            visit(mergeBlock, mergeWhy);
+            visit(mergeBlock, mergeWhy, block);
         }
     }
 
 private:
-    std::function<void(Block*, spv::ReachReason)> callback_;
+    std::function<void(Block*, spv::ReachReason, Block*)> callback_;
     // Whether a block has already been visited or is being delayed.
     std::unordered_set<Block *> visited_, delayed_;
     std::unordered_set<Block *> reachableViaControlFlow_;
 
-    bool fullyEmitDeadContinuesAndMerges;
+    const bool fullyEmitDeadContinuesAndMerges;
 };
 }
 
-void spv::inReadableOrder(Block* root, std::function<void(Block*, spv::ReachReason)> callback)
+void spv::inReadableOrder(Block* root, std::function<void(Block*, spv::ReachReason, Block*)> callback)
 {
-    ReadableOrderTraverser(callback).visit(root, spv::ReachViaControlFlow);
+    ReadableOrderTraverser(callback).visit(root, spv::ReachViaControlFlow, nullptr);
 }
