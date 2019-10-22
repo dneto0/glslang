@@ -311,10 +311,10 @@ typedef enum ReachReason {
 
 // Traverses the control-flow graph rooted at root in an order suited for
 // readable code generation.  Invokes callback at every node in the traversal
-// order.  The callback arguments are: 
+// order.  The callback arguments are:
 // - the block,
 // - the reason we reached the block,
-// - if the reason was that block is an unreachable continue or merge block
+// - if the reason was that block is an unreachable continue or unreachable merge block
 //   then the last parameter is the corresponding header block.
 void inReadableOrder(Block* root, std::function<void(Block*, ReachReason, Block* header)> callback);
 

@@ -341,21 +341,21 @@ void Builder::postProcess()
         Function* f = *fi;
         Block* entry = f->getEntryBlock();
         inReadableOrder(entry,
-	    [&reachableBlocks, &headerForUnreachableMerge, &headerForUnreachableContinue]
-	    (Block* b, ReachReason why, Block* header) {
+            [&reachableBlocks, &headerForUnreachableMerge, &headerForUnreachableContinue]
+            (Block* b, ReachReason why, Block* header) {
                reachableBlocks.insert(b);
-	       if (why == ReachDeadContinue) headerForUnreachableContinue[b] = header;
-	       if (why == ReachDeadMerge) headerForUnreachableMerge[b] = header;
+               if (why == ReachDeadContinue) headerForUnreachableContinue[b] = header;
+               if (why == ReachDeadMerge) headerForUnreachableMerge[b] = header;
             });
         for (auto bi = f->getBlocks().cbegin(); bi != f->getBlocks().cend(); bi++) {
             Block* b = *bi;
-	    if (headerForUnreachableMerge.count(b) != 0 || headerForUnreachableContinue.count(b) != 0) {
-                auto ii = b->getInstructions().cbegin(); 
-		++ii; // Keep potential decorations on the label.
+            if (headerForUnreachableMerge.count(b) != 0 || headerForUnreachableContinue.count(b) != 0) {
+                auto ii = b->getInstructions().cbegin();
+                ++ii; // Keep potential decorations on the label.
                 for (; ii != b->getInstructions().cend(); ++ii)
                     unreachableDefinitions.insert(ii->get()->getResultId());
-	    } else if (reachableBlocks.count(b) == 0) {
-	        // The normal case for unreachable code.  All definitions are considered dead.
+            } else if (reachableBlocks.count(b) == 0) {
+                // The normal case for unreachable code.  All definitions are considered dead.
                 for (auto ii = b->getInstructions().cbegin(); ii != b->getInstructions().cend(); ++ii)
                     unreachableDefinitions.insert(ii->get()->getResultId());
             }
@@ -366,12 +366,12 @@ void Builder::postProcess()
     // Delete their contents.
     for (auto merge_and_header : headerForUnreachableMerge) {
         Block* merge = merge_and_header.first;
-	merge->forceDeadMerge();
+        merge->forceDeadMerge();
     }
     for (auto continue_and_header : headerForUnreachableContinue) {
         Block* continue_target = continue_and_header.first;
         Block* header = continue_and_header.second;
-	continue_target->forceDeadContinue(header);
+        continue_target->forceDeadContinue(header);
     }
 
     // Remove unneeded decorations, for unreachable instructions
