@@ -66,7 +66,7 @@ public:
     // Visits the block if it hasn't been visited already and isn't currently
     // being delayed.  Invokes callback(block, why, header), then descends into its
     // successors.  Delays merge-block and continue-block processing until all
-    // the branches have been completed.  If |block| is an unreachabler merge block or 
+    // the branches have been completed.  If |block| is an unreachable merge block or 
     // an unreachable continue target, then |header| is the corresponding header block.
     void visit(Block* block, spv::ReachReason why, Block* header)
     {
