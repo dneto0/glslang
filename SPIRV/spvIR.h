@@ -229,7 +229,7 @@ public:
     // Change this block into a canonical dead merge block.  Delete instructions
     // as necessary.  A canonical dead merge block has only an OpLabel and an
     // OpUnreachable.
-    void forceDeadMerge() {
+    void rewriteAsCanonicalUnreachableMerge() {
        assert(localVariables.empty());
        // Delete all instructions except for the label.
        assert(instructions.size() > 0);
@@ -242,7 +242,7 @@ public:
     // given header ID.  Delete instructions as necessary.  A canonical dead continue
     // target has only an OpLabel and an unconditional branch back to the corresponding
     // header.
-    void forceDeadContinue(Block* header) {
+    void rewriteAsCanonicalUnreachableContinue(Block* header) {
        assert(localVariables.empty());
        // Delete all instructions except for the label.
        assert(instructions.size() > 0);

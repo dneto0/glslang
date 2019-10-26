@@ -360,12 +360,12 @@ void Builder::postProcess(bool generateCodeForUnreachableMergeAndContinue)
     // Modify unreachable merge blocks and unreachable continue targets.
     // Delete their contents.
     for (Block* merge : unreachableMerges) {
-        merge->forceDeadMerge();
+        merge->rewriteAsCanonicalUnreachableMerge();
     }
     for (auto continue_and_header : headerForUnreachableContinue) {
         Block* continue_target = continue_and_header.first;
         Block* header = continue_and_header.second;
-        continue_target->forceDeadContinue(header);
+        continue_target->rewriteAsCanonicalUnreachableContinue(header);
     }
 
     // Remove unneeded decorations, for unreachable instructions
