@@ -63,6 +63,7 @@ std::string FileNameAsCustomTestSuffixIoMap(
 }
 
 using CompileVulkanToSpirvTest = GlslangTest<::testing::TestWithParam<std::string>>;
+using CompileVulkanToSpirvDeadCodeElimTest = GlslangTest<::testing::TestWithParam<std::string>>;
 using CompileVulkanToDebugSpirvTest = GlslangTest<::testing::TestWithParam<std::string>>;
 using CompileVulkan1_1ToSpirvTest = GlslangTest<::testing::TestWithParam<std::string>>;
 using CompileToSpirv14Test = GlslangTest<::testing::TestWithParam<std::string>>;
@@ -80,6 +81,14 @@ using CompileUpgradeTextureToSampledTextureAndDropSamplersTest = GlslangTest<::t
 // generate SPIR-V.
 TEST_P(CompileVulkanToSpirvTest, FromFile)
 {
+    loadFileCompileAndCheck(GlobalTestSettings.testRoot, GetParam(),
+                            Source::GLSL, Semantics::Vulkan, glslang::EShTargetVulkan_1_0, glslang::EShTargetSpv_1_0,
+                            Target::Spv);
+}
+
+TEST_P(CompileVulkanToSpirvDeadCodeElimTest, FromFile)
+{
+    options().generateCodeForUnreachableMergeAndContinue = false;
     loadFileCompileAndCheck(GlobalTestSettings.testRoot, GetParam(),
                             Source::GLSL, Semantics::Vulkan, glslang::EShTargetVulkan_1_0, glslang::EShTargetSpv_1_0,
                             Target::Spv);
@@ -418,8 +427,10 @@ INSTANTIATE_TEST_CASE_P(
 );
 
 // Cases with deliberately unreachable code.
+// Compile them with the option of aggressively eliminating
+// unreachable merges and continues.
 INSTANTIATE_TEST_CASE_P(
-    GlslWithDeadCode, CompileVulkanToSpirvTest,
+    GlslWithDeadCode, CompileVulkanToSpirvDeadCodeElimTest,
     ::testing::ValuesIn(std::vector<std::string>({
         "spv.dead-after-continue.vert",
         "spv.dead-after-discard.frag",

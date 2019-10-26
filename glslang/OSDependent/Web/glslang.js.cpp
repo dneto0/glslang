@@ -221,6 +221,7 @@ void* convert_glsl_to_spirv(const char* glsl, int stage_int, bool gen_debug, uin
 
     glslang::SpvOptions spvOptions;
     spvOptions.generateDebugInfo = gen_debug;
+    spvOptions.generateCodeForUnreachableMergeAndContinue = false;
     spvOptions.optimizeSize = false;
     spvOptions.disassemble = false;
     spvOptions.validate = false;

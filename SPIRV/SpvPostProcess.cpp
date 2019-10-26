@@ -378,8 +378,6 @@ void Builder::postProcess(bool generateCodeForUnreachableMergeAndContinue)
 
     // Add per-instruction capabilities, extensions, etc.,
 
-    // WebGPU does not have physical storage buffer.
-#ifndef GLSLANG_WEB
     // Look for any 8/16 bit type in physical storage buffer class, and set the
     // appropriate capability. This happens in createSpvVariable for other storage
     // classes, but there isn't always a variable for physical storage buffer.
@@ -397,7 +395,6 @@ void Builder::postProcess(bool generateCodeForUnreachableMergeAndContinue)
             }
         }
     }
-#endif
 
     // process all block-contained instructions
     for (auto fi = module.getFunctions().cbegin(); fi != module.getFunctions().cend(); fi++) {
@@ -407,8 +404,6 @@ void Builder::postProcess(bool generateCodeForUnreachableMergeAndContinue)
             for (auto ii = b->getInstructions().cbegin(); ii != b->getInstructions().cend(); ii++)
                 postProcess(*ii->get());
 
-	    // WebGPU does not have physical storage buffer.
-#ifndef GLSLANG_WEB
             // For all local variables that contain pointers to PhysicalStorageBufferEXT, check whether
             // there is an existing restrict/aliased decoration. If we don't find one, add Aliased as the
             // default.
@@ -431,7 +426,6 @@ void Builder::postProcess(bool generateCodeForUnreachableMergeAndContinue)
                     }
                 }
             }
-#endif
         }
     }
 }
