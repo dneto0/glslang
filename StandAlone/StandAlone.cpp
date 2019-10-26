@@ -106,6 +106,10 @@ bool SpvToolsDisassembler = false;
 bool SpvToolsValidate = false;
 bool NaNClamp = false;
 
+// Generate SPIR-V for code inside and reachable from unreachable merge block
+// and unreachable continue target.
+bool GenerateCodeForUnreachableMergeAndContinue = true;
+
 //
 // Return codes from main/exit().
 //
@@ -523,6 +527,12 @@ void ProcessArguments(std::vector<std::unique_ptr<glslang::TWorkItem>>& workItem
                     } else if (lowerword == "keep-uncalled" || // synonyms
                                lowerword == "ku") {
                         Options |= EOptionKeepUncalled;
+                    } else if (lowerword == "keep-dead-merge-continue" || // synonyms
+                               lowerword == "kdmc") {
+                        GenerateCodeForUnreachableMergeAndContinue = true;
+                    } else if (lowerword == "no-keep-dead-merge-continue" || // synonyms
+                               lowerword == "no-kdmc") {
+                        GenerateCodeForUnreachableMergeAndContinue = false;
                     } else if (lowerword == "nan-clamp") {
                         NaNClamp = true;
                     } else if (lowerword == "no-storage-format" || // synonyms
@@ -988,7 +998,7 @@ void CompileAndLinkShaderUnits(std::vector<ShaderCompUnit> compUnits)
 
             // Set base bindings
             shader->setShiftBinding(res, baseBinding[res][compUnit.stage]);
-            
+
             // Set bindings for particular resource sets
             // TODO: use a range based for loop here, when available in all environments.
             for (auto i = baseBindingForSet[res][compUnit.stage].begin();
@@ -1115,6 +1125,8 @@ void CompileAndLinkShaderUnits(std::vector<ShaderCompUnit> compUnits)
                     glslang::SpvOptions spvOptions;
                     if (Options & EOptionDebug)
                         spvOptions.generateDebugInfo = true;
+		    spvOptions.generateCodeForUnreachableMergeAndContinue =
+		               GenerateCodeForUnreachableMergeAndContinue;
                     spvOptions.disableOptimizer = (Options & EOptionOptimizeDisable) != 0;
                     spvOptions.optimizeSize = (Options & EOptionOptimizeSize) != 0;
                     spvOptions.disassemble = SpvToolsDisassembler;

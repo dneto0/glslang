@@ -55,6 +55,7 @@ struct SpvOptions {
     SpvOptions() : generateDebugInfo(false), disableOptimizer(true),
         optimizeSize(false), disassemble(false), validate(false) { }
     bool generateDebugInfo;
+    bool generateCodeForUnreachableMergeAndContinue;
     bool disableOptimizer;
     bool optimizeSize;
     bool disassemble;

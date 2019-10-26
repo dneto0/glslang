@@ -1630,11 +1630,11 @@ void TGlslangToSpvTraverser::finishSpv()
     for (auto it = iOSet.cbegin(); it != iOSet.cend(); ++it)
         entryPoint->addIdOperand(*it);
 
-#ifndef GLSLANG_WEB
     // Add capabilities, extensions, remove unneeded decorations, etc., 
     // based on the resulting SPIR-V.
-    builder.postProcess();
-#endif
+    // Note: WebGPU code generation must have the opportunity to aggressively
+    // prune unreachable merge blocks and continue targets.
+    builder.postProcess(options.generateCodeForUnreachableMergeAndContinue);
 }
 
 // Write the SPV into 'out'.

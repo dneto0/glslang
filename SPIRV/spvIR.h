@@ -316,7 +316,11 @@ typedef enum ReachReason {
 // - the reason we reached the block,
 // - if the reason was that block is an unreachable continue or unreachable merge block
 //   then the last parameter is the corresponding header block.
-void inReadableOrder(Block* root, std::function<void(Block*, ReachReason, Block* header)> callback);
+// If |generateCodeForUnreachableMergeAndContinue| then the callback is called for all
+// blocks in the function, even those reachable from unreachable merges and continue targets;
+// also, the reason is always given as ReachViaControlFlow.
+void inReadableOrder(Block* root, std::function<void(Block*, ReachReason, Block* header)> callback, 
+    bool generateCodeForUnreachableMergeAndContinue);
 
 //
 // SPIR-V IR Function.
@@ -366,7 +370,7 @@ public:
             parameterInstructions[p]->dump(out);
 
         // Blocks
-        inReadableOrder(blocks[0], [&out](const Block* b, ReachReason, Block*) { b->dump(out); });
+        inReadableOrder(blocks[0], [&out](const Block* b, ReachReason, Block*) { b->dump(out); }, true);
         Instruction end(0, 0, OpFunctionEnd);
         end.dump(out);
     }

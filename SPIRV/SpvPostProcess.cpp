@@ -39,6 +39,7 @@
 #include <cassert>
 #include <cstdlib>
 
+#include <unordered_map>
 #include <unordered_set>
 #include <algorithm>
 
@@ -319,20 +320,14 @@ void Builder::postProcess(Instruction& inst)
     }
 }
 
-// Called for each instruction in a reachable block.
-void Builder::postProcessReachable(const Instruction&)
-{
-    // did have code here, but questionable to do so without deleting the instructions
-}
-
 // comment in header
-void Builder::postProcess()
+void Builder::postProcess(bool generateCodeForUnreachableMergeAndContinue)
 {
     // reachableBlocks is the set of blockss reached via control flow, or which are
     // unreachable continue targert or unreachable merge.
     std::unordered_set<const Block*> reachableBlocks;
     std::unordered_map<Block*, Block*> headerForUnreachableContinue;
-    std::unordered_map<Block*, Block*> headerForUnreachableMerge;
+    std::unordered_set<Block*> unreachableMerges;
     std::unordered_set<Id> unreachableDefinitions;
     // Collect IDs defined in unreachable blocks. For each function, label the
     // reachable blocks first. Then for each unreachable block, collect the
@@ -341,15 +336,15 @@ void Builder::postProcess()
         Function* f = *fi;
         Block* entry = f->getEntryBlock();
         inReadableOrder(entry,
-            [&reachableBlocks, &headerForUnreachableMerge, &headerForUnreachableContinue]
+            [&reachableBlocks, &unreachableMerges, &headerForUnreachableContinue]
             (Block* b, ReachReason why, Block* header) {
                reachableBlocks.insert(b);
                if (why == ReachDeadContinue) headerForUnreachableContinue[b] = header;
-               if (why == ReachDeadMerge) headerForUnreachableMerge[b] = header;
-            });
+               if (why == ReachDeadMerge) unreachableMerges.insert(b);
+            }, generateCodeForUnreachableMergeAndContinue);
         for (auto bi = f->getBlocks().cbegin(); bi != f->getBlocks().cend(); bi++) {
             Block* b = *bi;
-            if (headerForUnreachableMerge.count(b) != 0 || headerForUnreachableContinue.count(b) != 0) {
+            if (unreachableMerges.count(b) != 0 || headerForUnreachableContinue.count(b) != 0) {
                 auto ii = b->getInstructions().cbegin();
                 ++ii; // Keep potential decorations on the label.
                 for (; ii != b->getInstructions().cend(); ++ii)
@@ -364,8 +359,7 @@ void Builder::postProcess()
 
     // Modify unreachable merge blocks and unreachable continue targets.
     // Delete their contents.
-    for (auto merge_and_header : headerForUnreachableMerge) {
-        Block* merge = merge_and_header.first;
+    for (Block* merge : unreachableMerges) {
         merge->forceDeadMerge();
     }
     for (auto continue_and_header : headerForUnreachableContinue) {
@@ -384,6 +378,8 @@ void Builder::postProcess()
 
     // Add per-instruction capabilities, extensions, etc.,
 
+    // WebGPU does not have physical storage buffer.
+#ifndef GLSLANG_WEB
     // Look for any 8/16 bit type in physical storage buffer class, and set the
     // appropriate capability. This happens in createSpvVariable for other storage
     // classes, but there isn't always a variable for physical storage buffer.
@@ -401,13 +397,7 @@ void Builder::postProcess()
             }
         }
     }
-
-    // process all reachable instructions...
-    for (auto bi = reachableBlocks.cbegin(); bi != reachableBlocks.cend(); ++bi) {
-        const Block* block = *bi;
-        const auto function = [this](const std::unique_ptr<Instruction>& inst) { postProcessReachable(*inst.get()); };
-        std::for_each(block->getInstructions().begin(), block->getInstructions().end(), function);
-    }
+#endif
 
     // process all block-contained instructions
     for (auto fi = module.getFunctions().cbegin(); fi != module.getFunctions().cend(); fi++) {
@@ -417,6 +407,8 @@ void Builder::postProcess()
             for (auto ii = b->getInstructions().cbegin(); ii != b->getInstructions().cend(); ii++)
                 postProcess(*ii->get());
 
+	    // WebGPU does not have physical storage buffer.
+#ifndef GLSLANG_WEB
             // For all local variables that contain pointers to PhysicalStorageBufferEXT, check whether
             // there is an existing restrict/aliased decoration. If we don't find one, add Aliased as the
             // default.
@@ -439,6 +431,7 @@ void Builder::postProcess()
                     }
                 }
             }
+#endif
         }
     }
 }
