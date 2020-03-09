@@ -742,7 +742,7 @@ int TPpContext::CPPline(TPpToken* ppToken)
                 sourceName = atomStrings.getString(atomStrings.getAddAtom(ppToken->name));
                 parseContext.setCurrentSourceName(sourceName);
                 hasFile = true;
-                token = scanToken(ppToken);
+                token = scanHeaderName(ppToken, '"');
             } else
 #endif
             {
