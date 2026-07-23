@@ -39,16 +39,16 @@
 namespace glslangtest {
 namespace {
 
-using PreprocessingTest = GlslangTest<::testing::TestWithParam<std::string>>;
+using PreprocessingFileTest = GlslangTest<::testing::TestWithParam<std::string>>;
 
-TEST_P(PreprocessingTest, FromFile)
+TEST_P(PreprocessingFileTest, FromFile)
 {
     loadFilePreprocessAndCheck(GlobalTestSettings.testRoot, GetParam());
 }
 
 // clang-format off
 INSTANTIATE_TEST_SUITE_P(
-    Glsl, PreprocessingTest,
+    Glsl, PreprocessingFileTest,
     ::testing::ValuesIn(std::vector<std::string>({
         "preprocessor.bad_arg.vert",
         "preprocessor.cpp_style_line_directive.vert",
